@@ -9,11 +9,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 st.set_page_config(page_title="PRASH-AI", page_icon="🎓")
 st.title("🎓 PRASH-AI — Study Assistant")
 
-# Fetch API Key properly from Streamlit Secrets or Environment
+# Fetch API Key from Streamlit Secrets
 api_key = st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("API Key not found. Please add GEMINI_API_KEY to your Streamlit App Secrets.")
+    st.error("API Key not found. Please add GEMINI_API_KEY in Streamlit App Settings -> Secrets.")
     st.stop()
 
 client = genai.Client(api_key=api_key)
@@ -53,7 +53,7 @@ with tab1:
 
 Question: {user_query}"""
                 res = client.models.generate_content(
-                    model="gemini-3.6-flash", 
+                    model="gemini-2.5-flash", 
                     contents=prompt
                 )
                 st.write(res.text)
@@ -70,7 +70,7 @@ with tab2:
                     "summary": f"Create an exam revision cheat sheet from:\n{full_doc}"
                 }
                 res = client.models.generate_content(
-                    model="gemini-3.6-flash", 
+                    model="gemini-2.5-flash", 
                     contents=prompts[mode]
                 )
                 st.write(res.text)
