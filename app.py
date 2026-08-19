@@ -1,7 +1,7 @@
 import os
 import glob
 import streamlit as st
-from google import genai
+import google.generativeai as genai
 from pypdf import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -9,9 +9,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 st.set_page_config(page_title="PRASH-AI", page_icon="🎓")
 st.title("🎓 PRASH-AI — Study Assistant")
 
-# Direct API key setup
-api_key = "AQ.Ab8RN6IQFGgF2k9g18Fa6z5Ifz9XqZlNqN4HPdyy_C_Ib78j2g"
-client = genai.Client(api_key=api_key)
+# Configure API Key
+API_KEY = "AQ.Ab8RN6JKzx0yGEhyUQcWDdhhi-LnMTA06WskrbxoQyBSj7qw3A"
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Load & chunk PDF notes
 @st.cache_resource
@@ -46,13 +47,10 @@ with tab1:
                     
                     prompt = f"You are PRASH-AI, a helpful study assistant. Use ONLY this context to answer clearly:\n{context}\n\nQuestion: {user_query}"
                     
-                    res = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=prompt
-                    )
+                    res = model.generate_content(prompt)
                     st.write(res.text)
                 except Exception as e:
-                    st.error(f"Error generating answer: {e}")
+                    st.error(f"Error: {e}")
 
 with tab2:
     mode = st.selectbox("Choose Study Tool", ["quiz", "flashcards", "summary"])
@@ -66,10 +64,7 @@ with tab2:
                         "flashcards": f"Create 5 flashcards from:\n{full_doc}",
                         "summary": f"Create an exam revision cheat sheet from:\n{full_doc}"
                     }
-                    res = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=prompts[mode]
-                    )
+                    res = model.generate_content(prompts[mode])
                     st.write(res.text)
                 except Exception as e:
-                    st.error(f"Error generating study deck: {e}")
+                    st.error(f"Error: {e}")
