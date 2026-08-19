@@ -1,0 +1,4 @@
+google-genai
+pypdf
+scikit-learn
+streamlit
