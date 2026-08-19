@@ -9,9 +9,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 st.set_page_config(page_title="PRASH-AI", page_icon="🎓")
 st.title("🎓 PRASH-AI — Study Assistant")
 
-api_key = os.environ.get("GEMINI_API_KEY")
+# Fetch API Key properly from Streamlit Secrets or Environment
+api_key = st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("API Key not found. Please add GEMINI_API_KEY to your Streamlit App Secrets.")
+    st.stop()
+
 client = genai.Client(api_key=api_key)
 
+# Load & chunk PDF notes
 @st.cache_resource
 def load_notes():
     pdf_files = glob.glob("*.pdf")
@@ -35,24 +42,35 @@ with tab1:
     user_query = st.text_input("Ask any question from your notes:")
     if st.button("Ask PRASH"):
         if user_query and vectorizer is not None:
-            query_vec = vectorizer.transform([user_query])
-            scores = cosine_similarity(query_vec, chunk_vectors)[0]
-            top_indices = scores.argsort()[-3:][::-1]
-            context = "\n\n".join([chunks[i] for i in top_indices])
-            
-            prompt = f"""You are PRASH-AI, a supportive study assistant. Use ONLY this context to answer clearly:\n{context}\n\nQuestion: {user_query}"""
-            res = client.models.generate_content(model="gemini-3.6-flash", contents=prompt)
-            st.write(res.text)
+            with st.spinner("PRASH is thinking..."):
+                query_vec = vectorizer.transform([user_query])
+                scores = cosine_similarity(query_vec, chunk_vectors)[0]
+                top_indices = scores.argsort()[-3:][::-1]
+                context = "\n\n".join([chunks[i] for i in top_indices])
+                
+                prompt = f"""You are PRASH-AI, a helpful study assistant. Use ONLY this context to answer clearly:
+{context}
+
+Question: {user_query}"""
+                res = client.models.generate_content(
+                    model="gemini-3.6-flash", 
+                    contents=prompt
+                )
+                st.write(res.text)
 
 with tab2:
     mode = st.selectbox("Choose Study Tool", ["quiz", "flashcards", "summary"])
     if st.button("Generate Deck"):
         if chunks:
-            full_doc = "\n".join(chunks)
-            prompts = {
-                "quiz": f"Create a 5-question MCQ quiz with answers at the end based on:\n{full_doc}",
-                "flashcards": f"Create 5 flashcards from:\n{full_doc}",
-                "summary": f"Create an exam revision cheat sheet from:\n{full_doc}"
-            }
-            res = client.models.generate_content(model="gemini-3.6-flash", contents=prompts[mode])
-            st.write(res.text)
+            with st.spinner("Generating study material..."):
+                full_doc = "\n".join(chunks)
+                prompts = {
+                    "quiz": f"Create a 5-question MCQ quiz with answers at the end based on:\n{full_doc}",
+                    "flashcards": f"Create 5 flashcards from:\n{full_doc}",
+                    "summary": f"Create an exam revision cheat sheet from:\n{full_doc}"
+                }
+                res = client.models.generate_content(
+                    model="gemini-3.6-flash", 
+                    contents=prompts[mode]
+                )
+                st.write(res.text)
